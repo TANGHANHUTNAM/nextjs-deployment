@@ -1,0 +1,10 @@
+services:
+  app:
+    container_name: nextjs_prod
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: nextjs-app:latest
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
