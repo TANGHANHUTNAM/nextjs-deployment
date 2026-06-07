@@ -7,7 +7,7 @@ const token = process.env.DEPLOY_WEBHOOK_TOKEN;
 const projectDir = process.env.DEPLOY_PROJECT_DIR ?? process.cwd();
 const deployCommand =
   process.env.DEPLOY_COMMAND ??
-  'git pull origin main && docker compose up -d --build --remove-orphans';
+  'bash scripts/deploy-local.sh';
 
 if (!token) {
   console.error('DEPLOY_WEBHOOK_TOKEN is required');
@@ -45,7 +45,8 @@ function readBody(request) {
 
 function runDeploy() {
   return new Promise((resolve) => {
-    const child = spawn('bash', ['-lc', deployCommand], {
+    const shell = process.env.SHELL || 'bash';
+    const child = spawn(shell, ['-lc', deployCommand], {
       cwd: projectDir,
       env: process.env,
       stdio: ['ignore', 'pipe', 'pipe'],
@@ -126,4 +127,5 @@ const server = createServer(async (request, response) => {
 server.listen(port, host, () => {
   console.log(`Deploy listener running on http://${host}:${port}`);
   console.log(`Project directory: ${projectDir}`);
+  console.log(`Deploy command: ${deployCommand}`);
 });

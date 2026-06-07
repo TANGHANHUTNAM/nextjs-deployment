@@ -46,7 +46,7 @@ ssh -R 80:localhost:8787 nokey@localhost.run
 5. On each push to `main`, GitHub Actions will call the webhook, and the listener will run:
 
 ```bash
-git pull origin main && docker compose up -d --build --remove-orphans
+bash scripts/deploy-local.sh
 ```
 
 Optional environment variables for the listener:
@@ -55,6 +55,13 @@ Optional environment variables for the listener:
 - `DEPLOY_HOST` defaults to `127.0.0.1`
 - `DEPLOY_PROJECT_DIR` defaults to the current repo directory
 - `DEPLOY_COMMAND` overrides the deploy command
+
+The default deploy script:
+
+- fetches `origin/main`
+- resets the working tree to `origin/main`
+- runs `docker compose up -d --build --remove-orphans`
+- falls back to `docker-compose` if the Compose v2 plugin is unavailable
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 

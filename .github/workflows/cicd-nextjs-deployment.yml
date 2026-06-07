@@ -10,7 +10,7 @@ jobs:
     steps:
     - name: Trigger local deploy webhook
       run: |
-        curl --fail --show-error --silent \
+        curl --fail-with-body --show-error --silent \
           --request POST \
           --header "Authorization: Bearer ${{ secrets.DEPLOY_WEBHOOK_TOKEN }}" \
           --header "Content-Type: application/json" \
