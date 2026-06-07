@@ -56,6 +56,29 @@ Optional environment variables for the listener:
 - `DEPLOY_PROJECT_DIR` defaults to the current repo directory
 - `DEPLOY_COMMAND` overrides the deploy command
 
+## Docker Compose v2 on WSL2/Ubuntu
+
+The deployment host should use the Docker Compose v2 plugin (`docker compose`) instead of the legacy Python-based `docker-compose` v1 binary.
+
+Run this once on the WSL2/Ubuntu deployment machine:
+
+```bash
+cd ~/project/nextjs-deployment
+bash scripts/setup-docker-compose-v2.sh
+```
+
+This script:
+
+- installs `docker-compose-plugin`
+- removes the legacy `docker-compose` package when present
+- prints `docker compose version` so you can verify the upgrade
+
+The expected verification output is:
+
+```bash
+docker compose version
+```
+
 The default deploy script:
 
 - fetches `origin/main`
