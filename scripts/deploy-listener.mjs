@@ -1,10 +1,12 @@
-import { createServer } from 'node:http';
+import { createServer, request as httpRequest } from 'node:http';
 import { spawn } from 'node:child_process';
 
 const host = process.env.DEPLOY_HOST ?? '127.0.0.1';
 const port = Number(process.env.DEPLOY_PORT ?? '8787');
 const token = process.env.DEPLOY_WEBHOOK_TOKEN;
 const projectDir = process.env.DEPLOY_PROJECT_DIR ?? process.cwd();
+const appHost = process.env.APP_TARGET_HOST ?? '127.0.0.1';
+const appPort = Number(process.env.APP_TARGET_PORT ?? '3000');
 const deployCommand =
   process.env.DEPLOY_COMMAND ??
   'bash scripts/deploy-local.sh';
@@ -43,6 +45,38 @@ function readBody(request) {
   });
 }
 
+function proxyToApp(request, response) {
+  return new Promise((resolve) => {
+    const upstream = httpRequest(
+      {
+        hostname: appHost,
+        port: appPort,
+        path: request.url,
+        method: request.method,
+        headers: {
+          ...request.headers,
+          host: `${appHost}:${appPort}`,
+        },
+      },
+      (upstreamResponse) => {
+        response.writeHead(upstreamResponse.statusCode ?? 502, upstreamResponse.headers);
+        upstreamResponse.pipe(response);
+        upstreamResponse.on('end', resolve);
+      }
+    );
+
+    upstream.on('error', (error) => {
+      sendJson(response, 502, {
+        error: 'App proxy failed',
+        detail: error.message,
+      });
+      resolve();
+    });
+
+    request.pipe(upstream);
+  });
+}
+
 function runDeploy() {
   return new Promise((resolve) => {
     const shell = process.env.SHELL || 'bash';
@@ -78,8 +112,12 @@ const server = createServer(async (request, response) => {
     return sendJson(response, 200, { status: 'ok', deployInProgress });
   }
 
-  if (request.method !== 'POST' || request.url !== '/deploy') {
-    return sendJson(response, 404, { error: 'Not found' });
+  if (request.url !== '/deploy') {
+    return proxyToApp(request, response);
+  }
+
+  if (request.method !== 'POST') {
+    return sendJson(response, 405, { error: 'Method not allowed' });
   }
 
   const authorization = request.headers.authorization;
@@ -128,4 +166,5 @@ server.listen(port, host, () => {
   console.log(`Deploy listener running on http://${host}:${port}`);
   console.log(`Project directory: ${projectDir}`);
   console.log(`Deploy command: ${deployCommand}`);
+  console.log(`Proxy target: http://${appHost}:${appPort}`);
 });
