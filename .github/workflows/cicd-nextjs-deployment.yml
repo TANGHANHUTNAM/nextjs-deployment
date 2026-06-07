@@ -8,16 +8,11 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-    - name: SSH to Server and Build Locally
-      uses: appleboy/ssh-action@v1.0.3
-      with:
-        host: ${{ secrets.SSH_HOST }}
-        username: ${{ secrets.SSH_USERNAME }}
-        password: ${{ secrets.SSH_PASSWORD }} 
-        port: ${{ secrets.SSH_PORT }}
-        script: |
-          cd ~/project/nextjs-deployment       
-          git pull origin main           
-          docker compose up -d --build --remove-orphans
-          # docker rm -f nextjs_prod || true
-          # docker run -d -p 3000:3000 --name nextjs_prod nextjs-app:latest
+    - name: Trigger local deploy webhook
+      run: |
+        curl --fail --show-error --silent \
+          --request POST \
+          --header "Authorization: Bearer ${{ secrets.DEPLOY_WEBHOOK_TOKEN }}" \
+          --header "Content-Type: application/json" \
+          --data '{"ref":"${{ github.ref_name }}","sha":"${{ github.sha }}"}' \
+          "${{ secrets.DEPLOY_WEBHOOK_URL }}"

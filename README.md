@@ -16,6 +16,46 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+## Local Deploy Webhook
+
+This repo includes a lightweight deploy listener for WSL2 or other self-hosted environments where GitHub Actions cannot SSH directly into the machine.
+
+1. Set a shared secret in your shell:
+
+```bash
+export DEPLOY_WEBHOOK_TOKEN="replace-with-a-long-random-string"
+```
+
+2. Start the listener from the repo root:
+
+```bash
+npm run deploy:listen
+```
+
+3. Expose the listener through `localhost.run`:
+
+```bash
+ssh -R 80:localhost:8787 nokey@localhost.run
+```
+
+4. Save these GitHub secrets:
+
+- `DEPLOY_WEBHOOK_URL`: your `https://*.lhr.life/deploy` URL
+- `DEPLOY_WEBHOOK_TOKEN`: the same token used locally
+
+5. On each push to `main`, GitHub Actions will call the webhook, and the listener will run:
+
+```bash
+git pull origin main && docker compose up -d --build --remove-orphans
+```
+
+Optional environment variables for the listener:
+
+- `DEPLOY_PORT` defaults to `8787`
+- `DEPLOY_HOST` defaults to `127.0.0.1`
+- `DEPLOY_PROJECT_DIR` defaults to the current repo directory
+- `DEPLOY_COMMAND` overrides the deploy command
+
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
